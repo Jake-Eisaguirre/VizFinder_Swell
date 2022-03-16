@@ -31,6 +31,8 @@ library(gganimate)
 library(REdaS)
 library(transformr)
 library(magick)
+library(colorRamps)
+library(colorspace)
 
 
 ```
@@ -123,8 +125,12 @@ ca <- read_sf(here("s_11au16", "s_11au16.shp")) %>%
 merged_shapes <- bind_rows(ca, islands)
 ```
 
-# arrow df
+# arrow df & pal
 ```{r}
+
+#swell_pal <- matlab.like(100)
+
+
 
 # wind.arrows <- clean_data %>% 
 #     filter(x %in% sort(unique(x))[c(T, F, F, F, F, F, F, F, 
