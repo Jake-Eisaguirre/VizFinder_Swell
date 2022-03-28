@@ -63,52 +63,37 @@ Hs <- here("wave_data_Hs.nc")
 wave_Hs <-brick(Hs)
 
 
-Hs_data <- as.data.frame(rasterToPoints(wave_Hs)) %>% 
-  pivot_longer(!c(x,y), names_to = "date", values_to = "height")
 
 
-#Direction
-url_Dp <- paste0("http://thredds.cdip.ucsd.edu/thredds/ncss/cdip/model/MOP_grids/CA_0.01_forecast.nc?var=waveDp&north=34.75&west=-121.4&east=-117.06&south=32.36&disableLLSubset=on&disableProjSubset=on&horizStride=1&time_start=", date, "&time_end=", fut_date, "&timeStride=1&addLatLon=true&accept=netcdf")
-
-
-options(timeout = 10000)
-
-Dp <- download.file(url_Dp, here("wave_data_Dp.nc"))
-
-Dp <- here("wave_data_Dp.nc")
-
-wave_Dp <-brick(Dp)
-
-Dp_data <- as.data.frame(rasterToPoints(wave_Dp)) %>% 
-  pivot_longer(!c(x,y), names_to = "date", values_to = "direction")
-
-#period
-url_Ta <- paste0("http://thredds.cdip.ucsd.edu/thredds/ncss/cdip/model/MOP_grids/CA_0.01_forecast.nc?var=waveTa&north=34.75&west=-121.4&east=-117.06&south=32.36&disableLLSubset=on&disableProjSubset=on&horizStride=1&time_start=", date, "&time_end=", fut_date, "&timeStride=1&addLatLon=true&accept=netcdf")
-
-
-options(timeout = 10000)
-
-Ta <- download.file(url_Ta, here("wave_data_Ta.nc"))
-
-Ta <- here("wave_data_Ta.nc")
-
-wave_Ta <-brick(Ta)
-
-Ta_data <- as.data.frame(rasterToPoints(wave_Ta)) %>% 
-  pivot_longer(!c(x,y), names_to = "date", values_to = "period")
-```
-
-#clean data
-```{r}
-un_data <- left_join(Hs_data, Dp_data) 
-
-clean_data <- left_join(un_data, Ta_data) %>% 
-  mutate(date = gsub("X", "", date),
-         date = as.numeric(date),
-         date = as_datetime(date),
-         height = 3.28 * height,
-         angle = ((3.14/180)*(direction) + 0.5))
-
+# #Direction
+# url_Dp <- paste0("http://thredds.cdip.ucsd.edu/thredds/ncss/cdip/model/MOP_grids/CA_0.01_forecast.nc?var=waveDp&north=34.75&west=-121.4&east=-117.06&south=32.36&disableLLSubset=on&disableProjSubset=on&horizStride=1&time_start=", date, "&time_end=", fut_date, "&timeStride=1&addLatLon=true&accept=netcdf")
+# 
+# 
+# options(timeout = 10000)
+# 
+# Dp <- download.file(url_Dp, here("wave_data_Dp.nc"))
+# 
+# Dp <- here("wave_data_Dp.nc")
+# 
+# wave_Dp <-brick(Dp)
+# 
+# Dp_data <- as.data.frame(rasterToPoints(wave_Dp)) %>% 
+#   pivot_longer(!c(x,y), names_to = "date", values_to = "direction")
+# 
+# #period
+# url_Ta <- paste0("http://thredds.cdip.ucsd.edu/thredds/ncss/cdip/model/MOP_grids/CA_0.01_forecast.nc?var=waveTa&north=34.75&west=-121.4&east=-117.06&south=32.36&disableLLSubset=on&disableProjSubset=on&horizStride=1&time_start=", date, "&time_end=", fut_date, "&timeStride=1&addLatLon=true&accept=netcdf")
+# 
+# 
+# options(timeout = 10000)
+# 
+# Ta <- download.file(url_Ta, here("wave_data_Ta.nc"))
+# 
+# Ta <- here("wave_data_Ta.nc")
+# 
+# wave_Ta <-brick(Ta)
+# 
+# Ta_data <- as.data.frame(rasterToPoints(wave_Ta)) %>% 
+#   pivot_longer(!c(x,y), names_to = "date", values_to = "period")
 ```
 
 
@@ -124,6 +109,41 @@ ca <- read_sf(here("s_11au16", "s_11au16.shp")) %>%
 
 merged_shapes <- bind_rows(ca, islands)
 ```
+
+# crop
+```{r}
+
+hs_res <- c(0.001, 0.001) 
+
+new_ras_hs <- raster(xmn = -121.4,
+                      xmx = -117.06,
+                      ymn = 32.36,
+                      ymx = 34.75,
+                      res = hs_res)
+
+re_samp_hs <- resample(wave_Hs, new_ras_hs, method = "bilinear")
+
+cropped_hs <- mask(re_samp_hs, merged_shapes, inverse = T)
+
+final_ras_hs <- projectRaster(cropped_hs, crs = 4326)
+
+```
+
+
+#clean data
+```{r}
+
+Hs_data <- as.data.frame(rasterToPoints(final_ras_hs)) %>% 
+  pivot_longer(!c(x,y), names_to = "date", values_to = "height")
+
+clean_data <- Hs_data %>% 
+  mutate(date = gsub("X", "", date),
+         date = as.numeric(date),
+         date = as_datetime(date),
+         height = 3.28 * height)
+
+```
+
 
 # arrow df & pal
 ```{r}
@@ -148,29 +168,68 @@ a <- ggplot(data = clean_data) +
   geom_raster(aes(y=y, x=x, 
                   fill = height, frame = date), interpolate = T) +
   scale_fill_gradientn(colours = c("slategray1","skyblue", 
-                                   "royalblue1", "mediumblue", 
-                                   "magenta1", "firebrick1", "firebrick3")) +
+                                   "royalblue1", "purple1", "firebrick1", "firebrick4")) +
   transition_states(date) +
   labs(title = 'Date: {closest_state}', 
        fill = "Swell (ft)") +
   theme_classic() +
-  xlab("Longitude") +
-  ylab("Latitude") +
-  geom_sf(data = merged_shapes, color = "black", fill = "grey70") +
-  theme(axis.line=element_blank(),
-        axis.ticks=element_blank(),
-        panel.background=element_blank(),
+  theme(axis.line=element_blank(),axis.text.x=element_blank(),
+          axis.text.y=element_blank(),axis.ticks=element_blank(),
+          axis.title.x=element_blank(),
+          axis.title.y=element_blank(),legend.position="none",
+          panel.background=element_blank(),
         panel.border=element_blank(),
         panel.grid.major=element_blank(),
         panel.grid.minor=element_blank(),
-        plot.background=element_blank()) +
+        plot.background=element_blank(),
+        plot.margin=unit(c(0,0,0,0), "null")) +
   coord_sf(xlim = c(-121.4, -117.06), ylim = c(32.36, 34.75), expand = F)
 
 animate(a, nframes = 40, fps = 4) 
 
 #anim_save("VizFinder_Swell.gif", an)
 
-  
+```
+```{r}
+
+b <- ggplot(data = clean_data) +
+  geom_raster(aes(y=y, x=x, 
+                  fill = height, frame = date), interpolate = T) +
+  scale_fill_gradientn(colours = c("slategray1","skyblue", 
+                                   "royalblue1", "purple1", "firebrick1", "firebrick4")) +
+  theme_classic() +
+  theme(axis.line=element_blank(),axis.text.x=element_blank(),
+          axis.text.y=element_blank(),axis.ticks=element_blank(),
+          axis.title.x=element_blank(),
+          axis.title.y=element_blank(),legend.position="none",
+          panel.background=element_blank(),
+        panel.border=element_blank(),
+        panel.grid.major=element_blank(),
+        panel.grid.minor=element_blank(),
+        plot.background=element_blank(),
+        plot.margin=unit(c(0,0,0,0), "null")) +
+  coord_sf(xlim = c(-121.4, -117.06), ylim = c(32.36, 34.75), expand = F)
+
+s <- b + facet_wrap(~as.factor(date))
+
+```
+
+
+# saving brick    
+```{r}
+#variable to adjust saved sst resolution
+hs_dpi <- c(215)
+
+ggsave(s, here("pngs", "old", "hs.png"), dpi = hs_dpi, bg = "transparent")
+
+sst_png <- image_read(here("pngs", "old", "hs.png"))
+
+final_sst_png <- image_trim(sst_png) %>% 
+  image_transparent("white") %>% 
+  image_convert(antialias = F)
+
+image_write(final_sst_png, here("pngs", "site_ready", "final_sst.png"))
+
 ```
 
 
