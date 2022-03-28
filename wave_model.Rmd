@@ -113,7 +113,7 @@ merged_shapes <- bind_rows(ca, islands)
 # crop
 ```{r}
 
-hs_res <- c(0.001, 0.001) 
+hs_res <- c(0.005, 0.005) 
 
 new_ras_hs <- raster(xmn = -121.4,
                       xmx = -117.06,
@@ -127,6 +127,8 @@ cropped_hs <- mask(re_samp_hs, merged_shapes, inverse = T)
 
 final_ras_hs <- projectRaster(cropped_hs, crs = 4326)
 
+rm(new_ras_hs, wave_Hs, re_samp_hs, cropped_hs)
+gc()
 ```
 
 
@@ -141,7 +143,8 @@ clean_data <- Hs_data %>%
          date = as.numeric(date),
          date = as_datetime(date),
          height = 3.28 * height)
-
+rm(Hs_data)
+gc()
 ```
 
 
@@ -190,6 +193,7 @@ animate(a, nframes = 40, fps = 4)
 #anim_save("VizFinder_Swell.gif", an)
 
 ```
+
 ```{r}
 
 b <- ggplot(data = clean_data) +
