@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 # library(leafem) 
 # library(terra)
 library(raster)
-# library(sp)
+library(sf)
 library(here)
 # library(stars)
 library(lubridate)
@@ -57,9 +57,9 @@ url_Hs <- paste0("http://thredds.cdip.ucsd.edu/thredds/ncss/cdip/model/MOP_grids
 
 options(timeout = 10000)
 
-Hs <- download.file(url_Hs, here("wave_data_Hs.nc"))
+download.file(url_Hs, here('data',"wave_data_Hs.nc"))
 
-Hs <- here("wave_data_Hs.nc")
+Hs <- here('data',"wave_data_Hs.nc")
 
 wave_Hs <-brick(Hs)
 
@@ -100,10 +100,10 @@ wave_Hs <-brick(Hs)
 
 # Shape Files
 ```{r}
-islands <- read_sf(here("shape", "channel_islands.shp")) %>% 
+islands <- read_sf(here('data', "shape",'island_shape', "channel_islands.shp")) %>% 
   mutate(geometry = st_transform(geometry, crs = 4326))
 
-ca <- read_sf(here("s_11au16", "s_11au16.shp")) %>% 
+ca <- read_sf(here('data', "shape","s_11au16", "s_11au16.shp")) %>% 
   mutate(geometry = st_transform(geometry, crs = 4326)) %>% 
   filter(NAME == "California") %>% 
   select(geometry)
