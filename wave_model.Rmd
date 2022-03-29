@@ -42,13 +42,14 @@ library(colorspace)
 date <- as.Date(Sys.time())
   
 
-date <- as.Date(date) %>% 
-  paste0("T12:00:00Z")
+date <- as.Date(date)  %>% 
+   paste0("T12:00:00Z")
 
-past_date <- as.Date(date) +3 
+fut_date <- as.Date(date) +3 
 
-fut_date <- as.Date(past_date) %>% 
-  paste0("T12:00:00Z") 
+fut_date <- as.Date(fut_date) %>% 
+   paste0("T12:00:00Z") 
+
 
 #height
 url_Hs <- paste0("http://thredds.cdip.ucsd.edu/thredds/ncss/cdip/model/MOP_grids/CA_0.01_forecast.nc?var=waveHs&north=34.75&west=-121.4&east=-117.06&south=32.36&disableLLSubset=on&disableProjSubset=on&horizStride=1&time_start=", date, "&time_end=", fut_date, "&timeStride=1&addLatLon=true&accept=netcdf")
@@ -165,6 +166,7 @@ gc()
 #              arrow=arrow(length = unit(0.2,"cm"))) +
 ```
 
+# gganimate viz
 ```{r}
 
 a <- ggplot(data = clean_data) +
@@ -193,12 +195,12 @@ animate(a, nframes = 40, fps = 4)
 #anim_save("VizFinder_Swell.gif", an)
 
 ```
-
+# facet
 ```{r}
 
 b <- ggplot(data = clean_data) +
   geom_raster(aes(y=y, x=x, 
-                  fill = height, frame = date), interpolate = T) +
+                  fill = height, group = date), interpolate = T) +
   scale_fill_gradientn(colours = c("slategray1","skyblue", 
                                    "royalblue1", "purple1", "firebrick1", "firebrick4")) +
   theme_classic() +
@@ -218,21 +220,52 @@ s <- b + facet_wrap(~as.factor(date))
 
 ```
 
+#loop to create each plot 
+```{r}
+p.list = lapply(sort(unique(clean_data$date)), function(i) {
+  ggplot(clean_data[clean_data$date==i,], aes(y=y, x=x,
+                                              fill = height)) +
+    geom_raster(interpolate = T)+
+    facet_wrap(~as.factor(date)) +
+    scale_fill_gradientn(colours = c("slategray1","skyblue", 
+                                   "royalblue1", "purple1", "firebrick1", "firebrick4")) +
+  theme_classic() +
+  theme(axis.line=element_blank(),axis.text.x=element_blank(),
+          axis.text.y=element_blank(),axis.ticks=element_blank(),
+          axis.title.x=element_blank(),
+          axis.title.y=element_blank(),legend.position="none",
+          panel.background=element_blank(),
+        panel.border=element_blank(),
+        panel.grid.major=element_blank(),
+        panel.grid.minor=element_blank(),
+        plot.background=element_blank(),
+        plot.margin=unit(c(0,0,0,0), "null"),
+        strip.background = element_blank()) +
+  coord_sf(xlim = c(-121.4, -117.06), ylim = c(32.36, 34.75), expand = F)
+})
+
+
+```
+
 
 # saving brick    
 ```{r}
 #variable to adjust saved sst resolution
 hs_dpi <- c(215)
 
-ggsave(s, here("pngs", "old", "hs.png"), dpi = hs_dpi, bg = "transparent")
+for(i in 1:length(p.list)){
+  ggsave(paste0(here('pngs', 'old'), "/", clean_data$date[i], '.png'), dpi = hs_dpi, 
+         bg = "transparent", plot = p.list[[i]])
+}
 
-sst_png <- image_read(here("pngs", "old", "hs.png"))
 
-final_sst_png <- image_trim(sst_png) %>% 
-  image_transparent("white") %>% 
-  image_convert(antialias = F)
+for(i in 1:length(p.list)){
+  hs <- image_read(paste0(here('pngs', 'old'), "/", clean_data$date[i], '.png'))
+  hs <- image_trim(hs)
+  hs <- image_transparent(hs, "white")
+  image_write(hs, paste0(here('pngs', 'site_ready'), "/", clean_data$date[i], '.png'))
+}
 
-image_write(final_sst_png, here("pngs", "site_ready", "final_sst.png"))
 
 ```
 
