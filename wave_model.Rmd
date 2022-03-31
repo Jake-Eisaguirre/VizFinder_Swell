@@ -1,5 +1,5 @@
 ---
-title: "Untitled"
+title: "VizFinder_Swell"
 author: "Jake Eisaguirre"
 date: "10/24/2021"
 output: html_document
@@ -8,36 +8,18 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
-# library(leafem) 
-# library(terra)
 library(raster)
 library(sf)
 library(here)
-# library(stars)
 library(lubridate)
 library(tidyverse)
-# library(rasterVis)
-# library(shiny)
-# library(leaflet)
-# library(patchwork)
-# library(plotly)
-# library(rgdal)
-# library(terra)
-# library(rasterVis)
-# library(animation)
-# library(htmlwidgets)
-# library(ggquiver)
-# library(gganimate)
-# library(REdaS)
-# library(transformr)
 library(magick)
-# library(colorRamps)
 library(colorspace)
 
 
 ```
 
-# Read in and subset data for variable and ROI
+# Read in data
 ```{r}
 date <- as.Date(Sys.time())
   
@@ -45,7 +27,7 @@ date <- as.Date(Sys.time())
 date <- as.Date(date)  %>% 
    paste0("T12:00:00Z")
 
-fut_date <- as.Date(date) +3 
+fut_date <- as.Date(date) +5 
 
 fut_date <- as.Date(fut_date) %>% 
    paste0("T12:00:00Z") 
@@ -63,38 +45,6 @@ Hs <- here('data',"wave_data_Hs.nc")
 
 wave_Hs <-brick(Hs)
 
-
-
-
-# #Direction
-# url_Dp <- paste0("http://thredds.cdip.ucsd.edu/thredds/ncss/cdip/model/MOP_grids/CA_0.01_forecast.nc?var=waveDp&north=34.75&west=-121.4&east=-117.06&south=32.36&disableLLSubset=on&disableProjSubset=on&horizStride=1&time_start=", date, "&time_end=", fut_date, "&timeStride=1&addLatLon=true&accept=netcdf")
-# 
-# 
-# options(timeout = 10000)
-# 
-# Dp <- download.file(url_Dp, here("wave_data_Dp.nc"))
-# 
-# Dp <- here("wave_data_Dp.nc")
-# 
-# wave_Dp <-brick(Dp)
-# 
-# Dp_data <- as.data.frame(rasterToPoints(wave_Dp)) %>% 
-#   pivot_longer(!c(x,y), names_to = "date", values_to = "direction")
-# 
-# #period
-# url_Ta <- paste0("http://thredds.cdip.ucsd.edu/thredds/ncss/cdip/model/MOP_grids/CA_0.01_forecast.nc?var=waveTa&north=34.75&west=-121.4&east=-117.06&south=32.36&disableLLSubset=on&disableProjSubset=on&horizStride=1&time_start=", date, "&time_end=", fut_date, "&timeStride=1&addLatLon=true&accept=netcdf")
-# 
-# 
-# options(timeout = 10000)
-# 
-# Ta <- download.file(url_Ta, here("wave_data_Ta.nc"))
-# 
-# Ta <- here("wave_data_Ta.nc")
-# 
-# wave_Ta <-brick(Ta)
-# 
-# Ta_data <- as.data.frame(rasterToPoints(wave_Ta)) %>% 
-#   pivot_longer(!c(x,y), names_to = "date", values_to = "period")
 ```
 
 
@@ -148,78 +98,6 @@ rm(Hs_data, final_ras_hs)
 gc()
 ```
 
-
-# arrow df & pal
-```{r}
-
-#swell_pal <- matlab.like(100)
-
-
-
-# wind.arrows <- clean_data %>% 
-#     filter(x %in% sort(unique(x))[c(T, F, F, F, F, F, F, F, 
-#                                     F, F, F, F, F, F, F)], 
-#            y %in% sort(unique(y))[c(T, F, F, F, F, F, F, F, 
-#                                     F, F, F, F, F, F, F)])
-# 
-#   geom_spoke(data = wind.arrows, aes(y=y, x=x, angle = angle, radius = scales::rescale(period, c(.02, .15))), 
-#              arrow=arrow(length = unit(0.2,"cm"))) +
-```
-
-# gganimate viz
-```{r}
-
-# a <- ggplot(data = clean_data) +
-#   geom_raster(aes(y=y, x=x, 
-#                   fill = height, frame = date), interpolate = T) +
-#   scale_fill_gradientn(colours = c("slategray1","skyblue", 
-#                                    "royalblue1", "purple1", "firebrick1", "firebrick4")) +
-#   transition_states(date) +
-#   labs(title = 'Date: {closest_state}', 
-#        fill = "Swell (ft)") +
-#   theme_classic() +
-#   theme(axis.line=element_blank(),axis.text.x=element_blank(),
-#           axis.text.y=element_blank(),axis.ticks=element_blank(),
-#           axis.title.x=element_blank(),
-#           axis.title.y=element_blank(),legend.position="none",
-#           panel.background=element_blank(),
-#         panel.border=element_blank(),
-#         panel.grid.major=element_blank(),
-#         panel.grid.minor=element_blank(),
-#         plot.background=element_blank(),
-#         plot.margin=unit(c(0,0,0,0), "null")) +
-#   coord_sf(xlim = c(-121.4, -117.06), ylim = c(32.36, 34.75), expand = F)
-# 
-# animate(a, nframes = 40, fps = 4) 
-
-#anim_save("VizFinder_Swell.gif", an)
-
-```
-# facet
-```{r}
-
-# b <- ggplot(data = clean_data) +
-#   geom_raster(aes(y=y, x=x, 
-#                   fill = height, group = date), interpolate = T) +
-#   scale_fill_gradientn(colours = c("slategray1","skyblue", 
-#                                    "royalblue1", "purple1", "firebrick1", "firebrick4")) +
-#   theme_classic() +
-#   theme(axis.line=element_blank(),axis.text.x=element_blank(),
-#           axis.text.y=element_blank(),axis.ticks=element_blank(),
-#           axis.title.x=element_blank(),
-#           axis.title.y=element_blank(),legend.position="none",
-#           panel.background=element_blank(),
-#         panel.border=element_blank(),
-#         panel.grid.major=element_blank(),
-#         panel.grid.minor=element_blank(),
-#         plot.background=element_blank(),
-#         plot.margin=unit(c(0,0,0,0), "null")) +
-#   coord_sf(xlim = c(-121.4, -117.06), ylim = c(32.36, 34.75), expand = F)
-# 
-# s <- b + facet_wrap(~as.factor(date))
-
-```
-
 # pal
 ```{r}
 pal <- sequential_hcl(n = 100, h = c(308, 51), c = c(85, 162, 43), l = c(22, 100), power = c(1.1, 1.3), rev = TRUE, register = )
@@ -249,7 +127,6 @@ swell.list = lapply(sort(unique(clean_data$date)), function(i) {
   coord_sf(xlim = c(-121.4, -117.06), ylim = c(32.36, 34.75), expand = F)
 })
 
-swell.list[[4]]
 ```
 
 
