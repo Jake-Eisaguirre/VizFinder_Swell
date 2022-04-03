@@ -14,7 +14,7 @@ library(here)
 library(lubridate)
 library(tidyverse)
 library(magick)
-library(colorspace)
+library(colorRamps)
 
 
 ```
@@ -100,7 +100,8 @@ gc()
 
 # pal
 ```{r}
-pal <- sequential_hcl(n = 100, h = c(308, 51), c = c(85, 162, 43), l = c(22, 100), power = c(1.1, 1.3), rev = TRUE, register = )
+pal <- colorRampPalette(c("slategray1", "deepskyblue3", "orangered3", "darkred"))
+limits <- c(0, 20)
 ```
 
 #loop to create each plot 
@@ -108,9 +109,9 @@ pal <- sequential_hcl(n = 100, h = c(308, 51), c = c(85, 162, 43), l = c(22, 100
 swell.list = lapply(sort(unique(clean_data$date)), function(i) {
   ggplot(clean_data[clean_data$date==i,], aes(y=y, x=x,
                                               fill = height)) +
-    geom_raster(interpolate = T)+
-    facet_wrap(~as.factor(date)) +
-    scale_fill_gradientn(colors = pal) +
+  geom_raster(interpolate = T)+
+  facet_wrap(~as.factor(date)) +
+  scale_fill_gradientn(colours = pal(100), limits = limits) +
   theme_classic() +
   theme(axis.line=element_blank(),axis.text.x=element_blank(),
           axis.text.y=element_blank(),axis.ticks=element_blank(),
@@ -126,6 +127,7 @@ swell.list = lapply(sort(unique(clean_data$date)), function(i) {
         strip.text.x = element_blank()) +
   coord_sf(xlim = c(-121.4, -117.06), ylim = c(32.36, 34.75), expand = F)
 })
+
 
 ```
 
