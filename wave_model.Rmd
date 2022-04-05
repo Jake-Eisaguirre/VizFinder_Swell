@@ -100,7 +100,7 @@ gc()
 
 # pal
 ```{r}
-pal <- colorRampPalette(c("lightskyblue2", "deepskyblue2", "deepskyblue4", "seagreen3", "palegreen1", "khaki2", "orangered",
+pal <- colorRampPalette(c("lightskyblue2", "deepskyblue4", "seagreen3", "khaki2", "orangered",
                           "darkred"))
 limits <- c(0, 16)
 ```
@@ -112,7 +112,7 @@ swell.list = lapply(sort(unique(clean_data$date)), function(i) {
                                               fill = height)) +
   geom_raster(interpolate = T)+
   facet_wrap(~as.factor(date)) +
-  scale_fill_gradientn(colours = pal(100), limits = limits) +
+  scale_fill_gradientn(colours = pal(10), limits = limits) +
   theme_classic() +
   theme(axis.line=element_blank(),axis.text.x=element_blank(),
           axis.text.y=element_blank(),axis.ticks=element_blank(),
