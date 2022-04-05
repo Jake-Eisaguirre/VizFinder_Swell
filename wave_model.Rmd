@@ -100,8 +100,9 @@ gc()
 
 # pal
 ```{r}
-pal <- colorRampPalette(c("slategray1", "deepskyblue3", "orangered3", "darkred"))
-limits <- c(0, 20)
+pal <- colorRampPalette(c("lightskyblue2", "deepskyblue2", "deepskyblue4", "seagreen3", "palegreen1", "khaki2", "orangered",
+                          "darkred"))
+limits <- c(0, 16)
 ```
 
 #loop to create each plot 
