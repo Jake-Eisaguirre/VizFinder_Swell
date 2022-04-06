@@ -52,9 +52,9 @@ url_Ta <- paste0("http://thredds.cdip.ucsd.edu/thredds/ncss/cdip/model/MOP_grids
 
 options(timeout = 10000)
 
-Ta <- download.file(url_Ta, here("wave_data_Ta.nc"))
+Ta <- download.file(url_Ta, here('data',"wave_data_Ta.nc"))
 
-Ta <- here("wave_data_Ta.nc")
+Ta <- here('data',"wave_data_Ta.nc")
 
 wave_Ta <-brick(Ta)
 
