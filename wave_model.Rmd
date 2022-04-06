@@ -37,8 +37,6 @@ fut_date <- as.Date(fut_date) %>%
 url_Hs <- paste0("http://thredds.cdip.ucsd.edu/thredds/ncss/cdip/model/MOP_grids/CA_0.01_forecast.nc?var=waveHs&north=34.75&west=-121.4&east=-117.06&south=32.36&disableLLSubset=on&disableProjSubset=on&horizStride=1&time_start=", date, "&time_end=", fut_date, "&timeStride=1&addLatLon=true&accept=netcdf")
 
 
-options(timeout = 10000)
-
 download.file(url_Hs, here('data',"wave_data_Hs.nc"))
 
 Hs <- here('data',"wave_data_Hs.nc")
@@ -49,8 +47,6 @@ wave_Hs <-brick(Hs)
 #period
 url_Ta <- paste0("http://thredds.cdip.ucsd.edu/thredds/ncss/cdip/model/MOP_grids/CA_0.01_forecast.nc?var=waveTa&north=34.75&west=-121.4&east=-117.06&south=32.36&disableLLSubset=on&disableProjSubset=on&horizStride=1&time_start=", date, "&time_end=", fut_date, "&timeStride=1&addLatLon=true&accept=netcdf")
 
-
-options(timeout = 10000)
 
 Ta <- download.file(url_Ta, here('data',"wave_data_Ta.nc"))
 
@@ -110,10 +106,29 @@ clean_data <- Hs_data %>%
 rm(Hs_data, final_ras_hs)
 gc()
 ```
+# crop and re-sample period
+```{r}
+ta_res <- c(0.005, 0.005) 
+
+new_ras_ta <- raster(xmn = -121.4,
+                      xmx = -117.06,
+                      ymn = 32.36,
+                      ymx = 34.75,
+                      res = ta_res)
+
+re_samp_ta <- resample(wave_Ta, new_ras_ta, method = "bilinear")
+
+cropped_ta <- mask(re_samp_ta, merged_shapes, inverse = T)
+
+final_ras_ta <- projectRaster(cropped_ta, crs = 4326)
+
+rm(new_ras_ta, wave_Ta, re_samp_ta, cropped_ta, merged_shapes, islands, ca)
+gc()
+```
 
 # period data
 ```{r}
-Ta_data <- as.data.frame(rasterToPoints(wave_Ta)) %>%
+Ta_data <- as.data.frame(rasterToPoints(final_ras_ta)) %>%
   pivot_longer(!c(x,y), names_to = "date", values_to = "period") %>%
   mutate(date = gsub("X", "", date),
          date = as.numeric(date),
@@ -136,26 +151,7 @@ Ta_data <- as.data.frame(rasterToPoints(wave_Ta)) %>%
 #                                     F, F, F, F, F, F, F, F, F)]) %>% 
 #   mutate(period = round(period, 1))
 
-
-```
-
-# crop and re-sample period
-```{r}
-ta_res <- c(0.005, 0.005) 
-
-new_ras_ta <- raster(xmn = -121.4,
-                      xmx = -117.06,
-                      ymn = 32.36,
-                      ymx = 34.75,
-                      res = ta_res)
-
-re_samp_ta <- resample(wave_Ta, new_ras_ta, method = "bilinear")
-
-cropped_ta <- mask(re_samp_ta, merged_shapes, inverse = T)
-
-final_ras_ta <- projectRaster(cropped_ta, crs = 4326)
-
-rm(new_ras_ta, wave_Ta, re_samp_ta, cropped_ta)
+rm(final_ras_ta)
 gc()
 ```
 
@@ -232,6 +228,8 @@ period.list[[16]]
 #variable to adjust saved sst resolution
 hs_dpi <- c(215)
 
+unlink("pngs/swell/old/*")
+
 for(i in 1:length(swell.list)){
   
   ggsave(paste0(here('pngs', 'swell', 'old'), "/", clean_data$date[i], '.png'), dpi = hs_dpi, 
@@ -243,6 +241,9 @@ for(i in 1:length(swell.list)){
 
 # Magick loop for swell
 ```{r}
+
+unlink("pngs/swell/site_ready/*")
+
 for(i in 1:length(swell.list)){
   hs <- image_read(paste0(here('pngs', 'swell', 'old'), "/", clean_data$date[i], '.png'))
   hs <- image_trim(hs)
@@ -258,6 +259,8 @@ for(i in 1:length(swell.list)){
 #variable to adjust saved sst resolution
 ta_dpi <- c(215)
 
+unlink("pngs/period/old/*")
+
 for(i in 1:length(period.list)){
   
   ggsave(paste0(here('pngs', 'period', 'old'), "/", Ta_data$date[i], '.png'), dpi = ta_dpi, 
@@ -269,6 +272,9 @@ for(i in 1:length(period.list)){
 
 # Magick loop for period
 ```{r}
+
+unlink("pngs/period/site_ready/*")
+
 for(i in 1:length(period.list)){
   ta <- image_read(paste0(here('pngs', 'period', 'old'), "/", Ta_data$date[i], '.png'))
   ta <- image_trim(ta)
