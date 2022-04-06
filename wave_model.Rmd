@@ -150,7 +150,7 @@ pal <- colorRampPalette(c("deepskyblue4", "lightskyblue3", "mediumseagreen", "kh
 limits <- c(0, 16)
 ```
 
-#loop to create each plot 
+#loop to create each plot for swell
 ```{r}
 swell.list = lapply(sort(unique(clean_data$date)), function(i) {
   ggplot(data = clean_data[clean_data$date==i,], aes(y=y, x=x)) +
@@ -175,6 +175,13 @@ swell.list = lapply(sort(unique(clean_data$date)), function(i) {
 })
 
 swell.list[[16]]
+```
+
+#loop to add period stamp
+```{r}
+
+  
+
 ```
 
 
