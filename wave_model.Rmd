@@ -87,7 +87,7 @@ cropped_hs <- mask(re_samp_hs, merged_shapes, inverse = T)
 
 final_ras_hs <- projectRaster(cropped_hs, crs = 4326)
 
-rm(new_ras_hs, wave_Hs, re_samp_hs, cropped_hs)
+rm(new_ras_hs, wave_Hs, re_samp_hs, cropped_hs, merged_shapes, islands, ca)
 gc()
 ```
 
@@ -151,8 +151,8 @@ Ta_data <- as.data.frame(rasterToPoints(wave_Ta)) %>%
 #                                     F, F, F, F, F, F, F, F, F)]) %>% 
 #   mutate(period = round(period, 1))
 
-# rm(final_ras_ta)
-# gc()
+rm(wave_Ta)
+gc()
 ```
 
 
@@ -160,12 +160,7 @@ Ta_data <- as.data.frame(rasterToPoints(wave_Ta)) %>%
 ```{r}
 swell_pal <- colorRampPalette(c("lightskyblue2", "deepskyblue4", "seagreen3", "khaki2", "orangered","darkred"))
   
-# colorRampPalette(c("deepskyblue4", "lightskyblue3", "mediumseagreen", "khaki2", "orangered",
-#                           "darkred"))
-
 #period_pal <- colorRampPalette(c("darkred","orangered", "khaki2", "mediumseagreen", "lightskyblue3", "deepskyblue4"))
-
-
 
 limits <- c(0, 16)
 ```
