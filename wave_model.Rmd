@@ -108,27 +108,27 @@ gc()
 ```
 # crop and re-sample period
 ```{r}
-ta_res <- c(0.005, 0.005) 
-
-new_ras_ta <- raster(xmn = -121.4,
-                      xmx = -117.06,
-                      ymn = 32.36,
-                      ymx = 34.75,
-                      res = ta_res)
-
-re_samp_ta <- resample(wave_Ta, new_ras_ta, method = "bilinear")
-
-cropped_ta <- mask(re_samp_ta, merged_shapes, inverse = T)
-
-final_ras_ta <- projectRaster(cropped_ta, crs = 4326)
-
-rm(new_ras_ta, wave_Ta, re_samp_ta, cropped_ta, merged_shapes, islands, ca)
-gc()
+# ta_res <- c(0.005, 0.005) 
+# 
+# new_ras_ta <- raster(xmn = -121.4,
+#                       xmx = -117.06,
+#                       ymn = 32.36,
+#                       ymx = 34.75,
+#                       res = ta_res)
+# 
+# re_samp_ta <- resample(wave_Ta, new_ras_ta, method = "bilinear")
+# 
+# cropped_ta <- mask(re_samp_ta, merged_shapes, inverse = T)
+# 
+# final_ras_ta <- projectRaster(cropped_ta, crs = 4326)
+# 
+# rm(new_ras_ta, wave_Ta, re_samp_ta, cropped_ta, merged_shapes, islands, ca)
+# gc()
 ```
 
 # period data
 ```{r}
-Ta_data <- as.data.frame(rasterToPoints(final_ras_ta)) %>%
+Ta_data <- as.data.frame(rasterToPoints(wave_Ta)) %>%
   pivot_longer(!c(x,y), names_to = "date", values_to = "period") %>%
   mutate(date = gsub("X", "", date),
          date = as.numeric(date),
@@ -151,19 +151,21 @@ Ta_data <- as.data.frame(rasterToPoints(final_ras_ta)) %>%
 #                                     F, F, F, F, F, F, F, F, F)]) %>% 
 #   mutate(period = round(period, 1))
 
-rm(final_ras_ta)
-gc()
+# rm(final_ras_ta)
+# gc()
 ```
 
 
 # pal
 ```{r}
-swell_pal <- colorRampPalette(c("deepskyblue4", "lightskyblue3", "mediumseagreen", "khaki2", "orangered",
-                          "darkred"))
+swell_pal <- colorRampPalette(c("lightskyblue2", "deepskyblue4", "seagreen3", "khaki2", "orangered","darkred"))
+  
+# colorRampPalette(c("deepskyblue4", "lightskyblue3", "mediumseagreen", "khaki2", "orangered",
+#                           "darkred"))
 
-period_pal <- colorRampPalette(c("darkred","orangered", "khaki2", "mediumseagreen", "lightskyblue3", "deepskyblue4"))
+#period_pal <- colorRampPalette(c("darkred","orangered", "khaki2", "mediumseagreen", "lightskyblue3", "deepskyblue4"))
 
-#colorRampPalette(c("lightskyblue2", "deepskyblue4", "seagreen3", "khaki2", "orangered","darkred"))
+
 
 limits <- c(0, 16)
 ```
@@ -175,7 +177,6 @@ swell.list = lapply(sort(unique(clean_data$date)), function(i) {
   geom_raster(aes(fill = height), interpolate = T) +
   facet_wrap(~as.factor(date)) +
   scale_fill_gradientn(colours = swell_pal(10), limits = limits) +
-  #geom_text(data = period_stamp, aes(label = period), size = 2) +
   theme_classic() +
   theme(axis.line=element_blank(),axis.text.x=element_blank(),
           axis.text.y=element_blank(),axis.ticks=element_blank(),
@@ -192,34 +193,34 @@ swell.list = lapply(sort(unique(clean_data$date)), function(i) {
   coord_sf(xlim = c(-121.4, -117.06), ylim = c(32.36, 34.75), expand = F)
 })
 
-swell.list[[16]]
+
 ```
 
 # loop to create each plot for period 
 ```{r}
-period.list = lapply(sort(unique(Ta_data$date)), function(i) {
-  ggplot(data = Ta_data[Ta_data$date==i,], aes(y=y, x=x)) +
-  geom_raster(aes(fill = period), interpolate = T) +
-  facet_wrap(~as.factor(date)) +
-  scale_fill_gradientn(colours = period_pal(10), limits = limits) +
-  #geom_text(data = period_stamp, aes(label = period), size = 2) +
-  theme_classic() +
-  theme(axis.line=element_blank(),axis.text.x=element_blank(),
-          axis.text.y=element_blank(),axis.ticks=element_blank(),
-          axis.title.x=element_blank(),
-          axis.title.y=element_blank(),legend.position="none",
-          panel.background=element_blank(),
-        panel.border=element_blank(),
-        panel.grid.major=element_blank(),
-        panel.grid.minor=element_blank(),
-        plot.background=element_blank(),
-        plot.margin=unit(c(0,0,0,0), "null"),
-        strip.background = element_blank(),
-        strip.text.x = element_blank()) +
-  coord_sf(xlim = c(-121.4, -117.06), ylim = c(32.36, 34.75), expand = F)
-})
-  
-period.list[[16]]
+# period.list = lapply(sort(unique(Ta_data$date)), function(i) {
+#   ggplot(data = Ta_data[Ta_data$date==i,], aes(y=y, x=x)) +
+#   geom_raster(aes(fill = period), interpolate = T) +
+#   facet_wrap(~as.factor(date)) +
+#   scale_fill_gradientn(colours = period_pal(10), limits = limits) +
+#   #geom_text(data = period_stamp, aes(label = period), size = 2) +
+#   theme_classic() +
+#   theme(axis.line=element_blank(),axis.text.x=element_blank(),
+#           axis.text.y=element_blank(),axis.ticks=element_blank(),
+#           axis.title.x=element_blank(),
+#           axis.title.y=element_blank(),legend.position="none",
+#           panel.background=element_blank(),
+#         panel.border=element_blank(),
+#         panel.grid.major=element_blank(),
+#         panel.grid.minor=element_blank(),
+#         plot.background=element_blank(),
+#         plot.margin=unit(c(0,0,0,0), "null"),
+#         strip.background = element_blank(),
+#         strip.text.x = element_blank()) +
+#   coord_sf(xlim = c(-121.4, -117.06), ylim = c(32.36, 34.75), expand = F)
+# })
+#   
+# period.list[[16]]
 ```
 
 
@@ -257,15 +258,15 @@ for(i in 1:length(swell.list)){
 # ggsave loop for period 
 ```{r}
 #variable to adjust saved sst resolution
-ta_dpi <- c(215)
-
-unlink("pngs/period/old/*")
-
-for(i in 1:length(period.list)){
-  
-  ggsave(paste0(here('pngs', 'period', 'old'), "/", Ta_data$date[i], '.png'), dpi = ta_dpi, 
-         bg = "transparent", plot = period.list[[i]])
-}
+# ta_dpi <- c(215)
+# 
+# unlink("pngs/period/old/*")
+# 
+# for(i in 1:length(period.list)){
+#   
+#   ggsave(paste0(here('pngs', 'period', 'old'), "/", Ta_data$date[i], '.png'), dpi = ta_dpi, 
+#          bg = "transparent", plot = period.list[[i]])
+# }
 
 
 ```
@@ -273,13 +274,13 @@ for(i in 1:length(period.list)){
 # Magick loop for period
 ```{r}
 
-unlink("pngs/period/site_ready/*")
-
-for(i in 1:length(period.list)){
-  ta <- image_read(paste0(here('pngs', 'period', 'old'), "/", Ta_data$date[i], '.png'))
-  ta <- image_trim(ta)
-  ta <- image_transparent(ta, "white")
-  image_write(ta, paste0(here('pngs', 'period', 'site_ready'), "/", Ta_data$date[i], '.png'))
-}
+# unlink("pngs/period/site_ready/*")
+# 
+# for(i in 1:length(period.list)){
+#   ta <- image_read(paste0(here('pngs', 'period', 'old'), "/", Ta_data$date[i], '.png'))
+#   ta <- image_trim(ta)
+#   ta <- image_transparent(ta, "white")
+#   image_write(ta, paste0(here('pngs', 'period', 'site_ready'), "/", Ta_data$date[i], '.png'))
+# }
 
 ```
