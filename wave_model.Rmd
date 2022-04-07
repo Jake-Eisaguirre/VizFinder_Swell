@@ -132,24 +132,43 @@ Ta_data <- as.data.frame(rasterToPoints(wave_Ta)) %>%
   pivot_longer(!c(x,y), names_to = "date", values_to = "period") %>%
   mutate(date = gsub("X", "", date),
          date = as.numeric(date),
-         date = as_datetime(date)) 
+         date = as_datetime(date))
+
+x <- round(c(-121.110423, -120.562848, -120.057825,  -119.717691, -119.439510, -119.041160, -118.586216, 
+                           -118.507400, -118.087338, -117.662998, -117.437052, -117.335509, -118.160157, -119.059945, 
+                           -119.943535, -120.515873, -119.070552, -118.295248, -119.471023, -120.584913), 2)
+
+y <-  round(c(34.560459, 34.253113,34.348268, 34.147373, 34.256965, 33.989257, 33.913609, 33.699766, 33.576926, 
+                           33.272809, 32.922927, 32.535688, 32.606003, 32.500511, 32.644805, 33.138259, 33.135506, 33.102819,
+                           33.696946, 33.703024), 2)
+
+ta_loc <- as.data.frame(cbind(x, y))
+
+sub_ta <- Ta_data %>% 
+  group_by(date) %>% 
+  inner_join(ta_loc)
+
+sub_ta <- Ta_data %>% 
+  group_by(date) %>% 
+  filter(x %in% x_loc,
+         y %in% y_loc)
+
+sub_ta <- subset(Ta_data, x == -121.11 & y == 34.56)
+
+sub_ta <- Ta_data[loc_ta, on = .(x,y)]
 
 
-#ub_1 <- subset(Ta_data, x %in% ta_loc$x)
 
-# 
-# period_stamp <- Ta_data %>% 
-#     filter(x %in% sort(unique(x))[c(T, F, F, F, F, F, F, F, 
-#                                     F, F, F, F, F, F, F, F, F,
-#                                     F, F, F, F, F, F, F, F, F,
-#                                     F, F, F, F, F, F, F, F, F,
-#                                     F, F, F, F, F, F, F, F, F)], 
-#            y %in% sort(unique(y))[c(T, F, F, F, F, F, F, F, 
-#                                     F, F, F, F, F, F, F, F, F,
-#                                     F, F, F, F, F, F, F, F, F,
-#                                     F, F, F, F, F, F, F, F, F,
-#                                     F, F, F, F, F, F, F, F, F)]) %>% 
-#   mutate(period = round(period, 1))
+
+period_stamp <- Ta_data %>%
+  group_by(date) %>% 
+  filter(x %in% c(-121.110423, -120.562848, -120.057825,  -119.717691, -119.439510, -119.041160, -118.586216, 
+                           -118.507400, -118.087338, -117.662998, -117.437052, -117.335509, -118.160157, -119.059945, 
+                           -119.943535, -120.515873, -119.070552, -118.295248, -119.471023, -120.584913),
+           y %in% c(34.560459, 34.253113,34.348268, 34.147373, 34.256965, 33.989257, 33.913609, 33.699766, 33.576926, 
+                           33.272809, 32.922927, 32.535688, 32.606003, 32.500511, 32.644805, 33.138259, 33.135506, 33.102819,
+                           33.696946, 33.703024)) %>%
+  mutate(period = round(period, 1))
 
 rm(wave_Ta)
 gc()
