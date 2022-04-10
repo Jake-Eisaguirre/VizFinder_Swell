@@ -87,7 +87,7 @@ cropped_hs <- mask(re_samp_hs, merged_shapes, inverse = T)
 
 final_ras_hs <- projectRaster(cropped_hs, crs = 4326)
 
-rm(new_ras_hs, wave_Hs, re_samp_hs, cropped_hs, merged_shapes, islands, ca)
+rm(new_ras_hs, wave_Hs, re_samp_hs, cropped_hs)
 gc()
 ```
 
@@ -108,54 +108,75 @@ gc()
 ```
 # crop and re-sample period
 ```{r}
-# ta_res <- c(0.005, 0.005) 
-# 
-# new_ras_ta <- raster(xmn = -121.4,
-#                       xmx = -117.06,
-#                       ymn = 32.36,
-#                       ymx = 34.75,
-#                       res = ta_res)
-# 
-# re_samp_ta <- resample(wave_Ta, new_ras_ta, method = "bilinear")
-# 
-# cropped_ta <- mask(re_samp_ta, merged_shapes, inverse = T)
-# 
-# final_ras_ta <- projectRaster(cropped_ta, crs = 4326)
-# 
-# rm(new_ras_ta, wave_Ta, re_samp_ta, cropped_ta, merged_shapes, islands, ca)
-# gc()
+ta_res <- c(0.005, 0.005)
+
+new_ras_ta <- raster(xmn = -121.4,
+                      xmx = -117.06,
+                      ymn = 32.36,
+                      ymx = 34.75,
+                      res = ta_res)
+
+re_samp_ta <- resample(wave_Ta, new_ras_ta, method = "bilinear")
+
+cropped_ta <- mask(re_samp_ta, merged_shapes, inverse = T)
+
+final_ras_ta <- projectRaster(cropped_ta, crs = 4326)
+
+rm(new_ras_ta, wave_Ta, re_samp_ta, cropped_ta, merged_shapes, islands, ca)
+gc()
 ```
 
 # period data
 ```{r}
-Ta_data <- as.data.frame(rasterToPoints(wave_Ta)) %>%
-  pivot_longer(!c(x,y), names_to = "date", values_to = "period") %>%
-  mutate(date = gsub("X", "", date),
-         date = as.numeric(date),
-         date = as_datetime(date))
 
-x <- round(c(-121.110423, -120.562848, -120.057825,  -119.717691, -119.439510, -119.041160, -118.586216, 
+x <- as.vector(round(c(-121.110423, -120.562848, -120.057825,  -119.717691, -119.439510, -119.041160, -118.586216, 
                            -118.507400, -118.087338, -117.662998, -117.437052, -117.335509, -118.160157, -119.059945, 
-                           -119.943535, -120.515873, -119.070552, -118.295248, -119.471023, -120.584913), 2)
+                           -119.943535, -120.515873, -119.070552, -118.295248, -119.471023, -120.584913), 2))
 
-y <-  round(c(34.560459, 34.253113,34.348268, 34.147373, 34.256965, 33.989257, 33.913609, 33.699766, 33.576926, 
+y <-  as.vector(round(c(34.560459, 34.253113,34.348268, 34.147373, 34.256965, 33.989257, 33.913609, 33.699766, 33.576926, 
                            33.272809, 32.922927, 32.535688, 32.606003, 32.500511, 32.644805, 33.138259, 33.135506, 33.102819,
-                           33.696946, 33.703024), 2)
+                           33.696946, 33.703024), 2))
 
 ta_loc <- as.data.frame(cbind(x, y))
 
+
+Ta_data <- as.data.frame(rasterToPoints(final_ras_ta)) %>%
+  pivot_longer(!c(x,y), names_to = "date", values_to = "period") %>%
+  mutate(date = gsub("X", "", date),
+         date = as.numeric(date),
+         date = as_datetime(date),
+        x = round(x , 2),
+        y = round(y, 2))
+  
+a <- Ta_data %>% 
+  st_as_sf(. , coords = c("x", "y"), crs = 4326)
+
+b <- ta_loc %>% 
+  st_as_sf(. , coords = c("x", "y"), crs = 4326)
+
+loc <- a %>% 
+  group_by(date) %>% 
+  filter(geometry == b$geometry)
+
+loc <- loc %>% 
+  group_by(date) %>% 
+  filter(geometry == unique(geometry))
+
+
+sub_ta <- Ta_data 
+
+
 sub_ta <- Ta_data %>% 
   group_by(date) %>% 
-  inner_join(ta_loc)
+  filter(~ta_loc$x == ta_loc$y)
 
-sub_ta <- Ta_data %>% 
-  group_by(date) %>% 
-  filter(x %in% x_loc,
-         y %in% y_loc)
+%>% 
+  filter( x == unique(x),
+          y == unique(y))
 
-sub_ta <- subset(Ta_data, x == -121.11 & y == 34.56)
+sub_ta <- subset(Ta_data, x == -121.1104 & y == 34.5605)
 
-sub_ta <- Ta_data[loc_ta, on = .(x,y)]
+sub_ta <- Ta_data[ta_loc, on = .(x,y)]
 
 
 
