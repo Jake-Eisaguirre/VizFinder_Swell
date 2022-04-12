@@ -15,17 +15,18 @@ library(lubridate)
 library(tidyverse)
 library(magick)
 library(colorRamps)
+library(fuzzyjoin)
 
 
 ```
 
 # Read in data
 ```{r}
-date <- as.Date(Sys.time())
+date <- as.Date(Sys.time(), tz = "PST8PDT")
   
 
-date <- as.Date(date)  %>% 
-   paste0("T12:00:00Z")
+# date <- as.Date(date)  %>% 
+#    paste0("T00:00:00Z")
 
 fut_date <- as.Date(date) +5 
 
@@ -87,8 +88,8 @@ cropped_hs <- mask(re_samp_hs, merged_shapes, inverse = T)
 
 final_ras_hs <- projectRaster(cropped_hs, crs = 4326)
 
-rm(new_ras_hs, wave_Hs, re_samp_hs, cropped_hs)
-gc()
+# rm(new_ras_hs, wave_Hs, re_samp_hs, cropped_hs)
+# gc()
 ```
 
 
@@ -103,8 +104,8 @@ clean_data <- Hs_data %>%
          date = as.numeric(date),
          date = as_datetime(date),
          height = 3.28 * height)
-rm(Hs_data, final_ras_hs)
-gc()
+# rm(Hs_data, final_ras_hs)
+# gc()
 ```
 # crop and re-sample period
 ```{r}
@@ -122,77 +123,48 @@ cropped_ta <- mask(re_samp_ta, merged_shapes, inverse = T)
 
 final_ras_ta <- projectRaster(cropped_ta, crs = 4326)
 
-rm(new_ras_ta, wave_Ta, re_samp_ta, cropped_ta, merged_shapes, islands, ca)
-gc()
+# rm(new_ras_ta, wave_Ta, re_samp_ta, cropped_ta, merged_shapes, islands, ca)
+# gc()
 ```
 
 # period data
 ```{r}
 
-x <- as.vector(round(c(-121.110423, -120.562848, -120.057825,  -119.717691, -119.439510, -119.041160, -118.586216, 
-                           -118.507400, -118.087338, -117.662998, -117.437052, -117.335509, -118.160157, -119.059945, 
-                           -119.943535, -120.515873, -119.070552, -118.295248, -119.471023, -120.584913), 2))
+longitude <- as.vector(round(c(-121.110423, -120.562848, -120.057825,  -119.717691, 
+                               -119.439510, -119.041160, -118.586216, -118.507400, 
+                               -118.087338, -117.662998, -117.437052, -117.335509,
+                               -118.160157,-119.059945, -119.943535, -120.515873, 
+                               -119.070552, -118.295248, -119.471023, -120.584913), 6))
 
-y <-  as.vector(round(c(34.560459, 34.253113,34.348268, 34.147373, 34.256965, 33.989257, 33.913609, 33.699766, 33.576926, 
-                           33.272809, 32.922927, 32.535688, 32.606003, 32.500511, 32.644805, 33.138259, 33.135506, 33.102819,
-                           33.696946, 33.703024), 2))
+latitude <-  as.vector(round(c(34.560459, 34.253113,34.348268, 34.147373, 34.256965, 
+                               33.989257, 33.913609, 33.699766, 33.576926, 33.272809, 
+                               32.922927, 32.535688, 32.606003, 32.500511, 32.644805, 
+                               33.138259, 33.135506, 33.102819,33.696946, 33.703024), 6))
 
-ta_loc <- as.data.frame(cbind(x, y))
+ta_loc <- as.data.frame(cbind(longitude, latitude))
 
 
 Ta_data <- as.data.frame(rasterToPoints(final_ras_ta)) %>%
   pivot_longer(!c(x,y), names_to = "date", values_to = "period") %>%
   mutate(date = gsub("X", "", date),
          date = as.numeric(date),
-         date = as_datetime(date),
-        x = round(x , 2),
-        y = round(y, 2))
+         date = as_datetime(date)) %>% 
+  rename(latitude = y) %>% 
+  rename(longitude = x)
+
+
+
+loc <- Ta_data %>% 
+  group_by(date) %>% 
+  geo_join(ta_loc, max_dist = 0.2, by = c("latitude", "longitude")) %>% 
+  select(!c(latitude.x, longitude.x)) %>% 
+  rename(latitude = latitude.y) %>% 
+  rename(longitude = longitude.y) %>% 
+  as.data.frame()
   
-a <- Ta_data %>% 
-  st_as_sf(. , coords = c("x", "y"), crs = 4326)
 
-b <- ta_loc %>% 
-  st_as_sf(. , coords = c("x", "y"), crs = 4326)
-
-loc <- a %>% 
-  group_by(date) %>% 
-  filter(geometry == b$geometry)
-
-loc <- loc %>% 
-  group_by(date) %>% 
-  filter(geometry == unique(geometry))
-
-
-sub_ta <- Ta_data 
-
-
-sub_ta <- Ta_data %>% 
-  group_by(date) %>% 
-  filter(~ta_loc$x == ta_loc$y)
-
-%>% 
-  filter( x == unique(x),
-          y == unique(y))
-
-sub_ta <- subset(Ta_data, x == -121.1104 & y == 34.5605)
-
-sub_ta <- Ta_data[ta_loc, on = .(x,y)]
-
-
-
-
-period_stamp <- Ta_data %>%
-  group_by(date) %>% 
-  filter(x %in% c(-121.110423, -120.562848, -120.057825,  -119.717691, -119.439510, -119.041160, -118.586216, 
-                           -118.507400, -118.087338, -117.662998, -117.437052, -117.335509, -118.160157, -119.059945, 
-                           -119.943535, -120.515873, -119.070552, -118.295248, -119.471023, -120.584913),
-           y %in% c(34.560459, 34.253113,34.348268, 34.147373, 34.256965, 33.989257, 33.913609, 33.699766, 33.576926, 
-                           33.272809, 32.922927, 32.535688, 32.606003, 32.500511, 32.644805, 33.138259, 33.135506, 33.102819,
-                           33.696946, 33.703024)) %>%
-  mutate(period = round(period, 1))
-
-rm(wave_Ta)
-gc()
+# rm(final_ras_ta, ta_loc, longitude, latitude, Ta_data)
+# gc()
 ```
 
 
@@ -229,33 +201,43 @@ swell.list = lapply(sort(unique(clean_data$date)), function(i) {
 })
 
 
+
+a <- swell.list[[16]]
+
+blah <- loc %>% 
+  mutate(date = as.factor(date),
+         period = round(period, 1)) %>% 
+  filter(date == "2022-04-12 01:00:00")
+
+  swell.list[[1]] +
+   geom_text(data = blah, aes(x = longitude, y = latitude, label = period))
 ```
 
 # loop to create each plot for period 
 ```{r}
-# period.list = lapply(sort(unique(Ta_data$date)), function(i) {
-#   ggplot(data = Ta_data[Ta_data$date==i,], aes(y=y, x=x)) +
-#   geom_raster(aes(fill = period), interpolate = T) +
-#   facet_wrap(~as.factor(date)) +
-#   scale_fill_gradientn(colours = period_pal(10), limits = limits) +
-#   #geom_text(data = period_stamp, aes(label = period), size = 2) +
-#   theme_classic() +
-#   theme(axis.line=element_blank(),axis.text.x=element_blank(),
-#           axis.text.y=element_blank(),axis.ticks=element_blank(),
-#           axis.title.x=element_blank(),
-#           axis.title.y=element_blank(),legend.position="none",
-#           panel.background=element_blank(),
-#         panel.border=element_blank(),
-#         panel.grid.major=element_blank(),
-#         panel.grid.minor=element_blank(),
-#         plot.background=element_blank(),
-#         plot.margin=unit(c(0,0,0,0), "null"),
-#         strip.background = element_blank(),
-#         strip.text.x = element_blank()) +
-#   coord_sf(xlim = c(-121.4, -117.06), ylim = c(32.36, 34.75), expand = F)
-# })
-#   
-# period.list[[16]]
+
+for (i in swell.list){
+  
+  swell.list <- ggplot() +
+    geom_text(data = loc, aes(x = longitude, y = latitude, label = loc$period==i)) +
+    facet_wrap(as.factor(~date)) +
+    theme(axis.line=element_blank(),axis.text.x=element_blank(),
+          axis.text.y=element_blank(),axis.ticks=element_blank(),
+          axis.title.x=element_blank(),
+          axis.title.y=element_blank(),legend.position="none",
+          panel.background=element_blank(),
+        panel.border=element_blank(),
+        panel.grid.major=element_blank(),
+        panel.grid.minor=element_blank(),
+        plot.background=element_blank(),
+        plot.margin=unit(c(0,0,0,0), "null"),
+        strip.background = element_blank(),
+        strip.text.x = element_blank()) +
+  coord_sf(xlim = c(-121.4, -117.06), ylim = c(32.36, 34.75), expand = F)
+  
+}
+
+
 ```
 
 
