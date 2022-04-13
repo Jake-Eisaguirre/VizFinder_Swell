@@ -209,20 +209,21 @@ swell.list = lapply(sort(unique(clean_data$date)), function(i) {
 # loop to create each plot for period 
 ```{r}
 
+new.swell.list <- list()
+
 for(i in 1:length(swell.list)){
   
-  swell.list[[i]] +
-    geom_text(data = loc, aes(x = longitude, y = latitude, label = period)) +
-    facet_wrap(~as.factor(date))
+  new.swell.list[[i]] <- swell.list[[i]] +
+    geom_text(data = loc, aes(x = longitude, y = latitude, label = period)) 
 
 }
 
-swell.list[[1]]
+new.swell.list[[10]]
 
 blah <- loc %>% 
   mutate(date = as.factor(date),
          period = round(period, 1)) %>% 
-  filter(date == "2022-04-13 01:00:00")
+  filter(date == "2022-04-13 19:00:00")
   
 swell.list[[1]] +
    geom_text(data = blah, aes(x = longitude, y = latitude, label = period))
