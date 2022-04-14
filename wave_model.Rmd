@@ -161,10 +161,10 @@ loc <- Ta_data %>%
   select(!c(latitude.x, longitude.x)) %>% 
   rename(latitude = latitude.y) %>% 
   rename(longitude = longitude.y) %>% 
-  mutate(period = round(period, 1)) %>% 
+  mutate(period = round(period, 0)) %>% 
   as.data.frame()
   
-loc$period <- paste0(loc$period, "s")
+loc$period <- paste0(loc$period, " sec")
   
 
 rm(final_ras_ta, ta_loc, longitude, latitude) #,Ta_data)
@@ -178,7 +178,8 @@ swell_pal <- colorRampPalette(c("lightskyblue2", "deepskyblue4", "seagreen3", "k
   
 period_pal <- colorRampPalette(c("darkred","orangered", "khaki2", "mediumseagreen", "lightskyblue3", "deepskyblue4"))
 
-limits <- c(0, 16)
+swell_limits <- c(0, 16)
+period_limits <- c(0,16)
 ```
 
 #loop to create each plot for swell
@@ -187,7 +188,7 @@ swell.list = lapply(sort(unique(clean_data$date)), function(i) {
   ggplot(data = clean_data[clean_data$date==i,], aes(y=y, x=x)) +
   geom_raster(aes(fill = height), interpolate = T) +
   facet_wrap(~as.factor(date)) +
-  scale_fill_gradientn(colours = swell_pal(10), limits = limits) +
+  scale_fill_gradientn(colours = swell_pal(10), limits = swell_limits) +
   theme_classic() +
   theme(axis.line=element_blank(),axis.text.x=element_blank(),
           axis.text.y=element_blank(),axis.ticks=element_blank(),
@@ -217,7 +218,7 @@ for(i in seq_along(swell.list)){
   
   new.swell.list[[i]] <- swell.list[[i]] +
     geom_text(data = loc[loc$date==unique(loc$date)[i],], aes(x = longitude, y = latitude, label = period),
-              check_overlap = T) 
+              check_overlap = T, size = 1.5) 
 
 }
 
@@ -264,7 +265,7 @@ period.list = lapply(sort(unique(Ta_data$date)), function(i) {
   ggplot(data = Ta_data[Ta_data$date==i,], aes(y=latitude, x=longitude)) +
   geom_raster(aes(fill = period), interpolate = T) +
   facet_wrap(~as.factor(date)) +
-  scale_fill_gradientn(colours = period_pal(10), limits = limits) +
+  scale_fill_gradientn(colours = period_pal(10), limits = period_limits) +
   theme_classic() +
   theme(axis.line=element_blank(),axis.text.x=element_blank(),
           axis.text.y=element_blank(),axis.ticks=element_blank(),
