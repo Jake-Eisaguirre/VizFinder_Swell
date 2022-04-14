@@ -164,6 +164,8 @@ loc <- Ta_data %>%
   mutate(period = round(period, 1)) %>% 
   as.data.frame()
   
+loc$period <- paste0(loc$period, "s")
+  
 
 # rm(final_ras_ta, ta_loc, longitude, latitude, Ta_data)
 # gc()
@@ -174,7 +176,7 @@ loc <- Ta_data %>%
 ```{r}
 swell_pal <- colorRampPalette(c("lightskyblue2", "deepskyblue4", "seagreen3", "khaki2", "orangered","darkred"))
   
-#period_pal <- colorRampPalette(c("darkred","orangered", "khaki2", "mediumseagreen", "lightskyblue3", "deepskyblue4"))
+period_pal <- colorRampPalette(c("darkred","orangered", "khaki2", "mediumseagreen", "lightskyblue3", "deepskyblue4"))
 
 limits <- c(0, 16)
 ```
@@ -203,30 +205,22 @@ swell.list = lapply(sort(unique(clean_data$date)), function(i) {
 })
 
 
-
 ```
 
 # loop to create each plot for period 
 ```{r}
 
+
 new.swell.list <- list()
 
-for(i in 1:length(swell.list)){
+for(i in seq_along(swell.list)){
   
   new.swell.list[[i]] <- swell.list[[i]] +
-    geom_text(data = loc, aes(x = longitude, y = latitude, label = period)) 
+    geom_text(data = loc[loc$date==unique(loc$date)[i],], aes(x = longitude, y = latitude, label = period),
+              check_overlap = T) 
 
 }
 
-new.swell.list[[10]]
-
-blah <- loc %>% 
-  mutate(date = as.factor(date),
-         period = round(period, 1)) %>% 
-  filter(date == "2022-04-13 19:00:00")
-  
-swell.list[[1]] +
-   geom_text(data = blah, aes(x = longitude, y = latitude, label = period))
 ```
 
 
@@ -237,10 +231,10 @@ hs_dpi <- c(215)
 
 unlink("pngs/swell/old/*")
 
-for(i in 1:length(swell.list)){
+for(i in 1:length(new.swell.list)){
   
   ggsave(paste0(here('pngs', 'swell', 'old'), "/", clean_data$date[i], '.png'), dpi = hs_dpi, 
-         bg = "transparent", plot = swell.list[[i]])
+         bg = "transparent", plot = new.swell.list[[i]])
 }
 
 
@@ -251,7 +245,7 @@ for(i in 1:length(swell.list)){
 
 unlink("pngs/swell/site_ready/*")
 
-for(i in 1:length(swell.list)){
+for(i in 1:length(new.swell.list)){
   hs <- image_read(paste0(here('pngs', 'swell', 'old'), "/", clean_data$date[i], '.png'))
   hs <- image_trim(hs)
   hs <- image_transparent(hs, "white")
@@ -261,18 +255,42 @@ for(i in 1:length(swell.list)){
 ```
 
 
+```{r}
+period.list = lapply(sort(unique(Ta_data$date)), function(i) {
+  ggplot(data = Ta_data[Ta_data$date==i,], aes(y=latitude, x=longitude)) +
+  geom_raster(aes(fill = period), interpolate = T) +
+  facet_wrap(~as.factor(date)) +
+  scale_fill_gradientn(colours = period_pal(10), limits = limits) +
+  theme_classic() +
+  theme(axis.line=element_blank(),axis.text.x=element_blank(),
+          axis.text.y=element_blank(),axis.ticks=element_blank(),
+          axis.title.x=element_blank(),
+          axis.title.y=element_blank(),legend.position="none",
+          panel.background=element_blank(),
+        panel.border=element_blank(),
+        panel.grid.major=element_blank(),
+        panel.grid.minor=element_blank(),
+        plot.background=element_blank(),
+        plot.margin=unit(c(0,0,0,0), "null"),
+        strip.background = element_blank(),
+        strip.text.x = element_blank()) +
+  coord_sf(xlim = c(-121.4, -117.06), ylim = c(32.36, 34.75), expand = F)
+})
+```
+
+
 # ggsave loop for period 
 ```{r}
 #variable to adjust saved sst resolution
-# ta_dpi <- c(215)
-# 
-# unlink("pngs/period/old/*")
-# 
-# for(i in 1:length(period.list)){
-#   
-#   ggsave(paste0(here('pngs', 'period', 'old'), "/", Ta_data$date[i], '.png'), dpi = ta_dpi, 
-#          bg = "transparent", plot = period.list[[i]])
-# }
+ta_dpi <- c(215)
+
+unlink("pngs/period/old/*")
+
+for(i in 1:length(period.list)){
+
+  ggsave(paste0(here('pngs', 'period', 'old'), "/", Ta_data$date[i], '.png'), dpi = ta_dpi,
+         bg = "transparent", plot = period.list[[i]])
+}
 
 
 ```
@@ -280,13 +298,13 @@ for(i in 1:length(swell.list)){
 # Magick loop for period
 ```{r}
 
-# unlink("pngs/period/site_ready/*")
-# 
-# for(i in 1:length(period.list)){
-#   ta <- image_read(paste0(here('pngs', 'period', 'old'), "/", Ta_data$date[i], '.png'))
-#   ta <- image_trim(ta)
-#   ta <- image_transparent(ta, "white")
-#   image_write(ta, paste0(here('pngs', 'period', 'site_ready'), "/", Ta_data$date[i], '.png'))
-# }
+unlink("pngs/period/site_ready/*")
+
+for(i in 1:length(period.list)){
+  ta <- image_read(paste0(here('pngs', 'period', 'old'), "/", Ta_data$date[i], '.png'))
+  ta <- image_trim(ta)
+  ta <- image_transparent(ta, "white")
+  image_write(ta, paste0(here('pngs', 'period', 'site_ready'), "/", Ta_data$date[i], '.png'))
+}
 
 ```
