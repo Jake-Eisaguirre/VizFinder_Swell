@@ -176,10 +176,10 @@ gc()
 ```{r}
 swell_pal <- colorRampPalette(c("lightskyblue2", "deepskyblue4", "seagreen3", "khaki2", "orangered","darkred"))
   
-period_pal <- colorRampPalette(c("darkred","orangered", "khaki2", "mediumseagreen", "lightskyblue3", "deepskyblue4"))
+period_pal <- colorRampPalette(c("darkred","orangered", "seagreen3", "lightskyblue3", "deepskyblue4"))
 
 swell_limits <- c(0, 16)
-period_limits <- c(0,16)
+period_limits <- c(0,18)
 ```
 
 #loop to create each plot for swell
@@ -269,8 +269,8 @@ period.list = lapply(sort(unique(Ta_data$date)), function(i) {
   theme_classic() +
   theme(axis.line=element_blank(),axis.text.x=element_blank(),
           axis.text.y=element_blank(),axis.ticks=element_blank(),
-          axis.title.x=element_blank(),
-          axis.title.y=element_blank(),legend.position="none",
+          axis.title.x=element_blank(),legend.position="none",
+          axis.title.y=element_blank(),
           panel.background=element_blank(),
         panel.border=element_blank(),
         panel.grid.major=element_blank(),
@@ -281,6 +281,8 @@ period.list = lapply(sort(unique(Ta_data$date)), function(i) {
         strip.text.x = element_blank()) +
   coord_sf(xlim = c(-121.4, -117.06), ylim = c(32.36, 34.75), expand = F)
 })
+
+ 
 ```
 
 
