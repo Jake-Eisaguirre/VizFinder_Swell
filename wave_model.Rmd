@@ -285,7 +285,8 @@ period.list = lapply(sort(unique(Ta_data$date)), function(i) {
 
 period.list[[1]] 
 
-legend.position="none",
+
+#legend.position="none",
 ```
 
 
