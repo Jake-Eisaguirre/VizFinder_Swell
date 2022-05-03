@@ -175,8 +175,9 @@ gc()
 # pal
 ```{r}
 swell_pal <- colorRampPalette(c("lightskyblue2", "deepskyblue4", "seagreen3", "khaki2", "orangered","darkred"))
+
   
-period_pal <- colorRampPalette(c("darkred","orangered", "seagreen3", "lightskyblue3", "deepskyblue4"))
+period_pal <- colorRampPalette(rev(c("#1019a8","#1f2cff", "#2865ff", "#3bb6ff", "#49e6ff", "#4afd00", "#fdfc07", "#fbcc00", "#f76601", "#f728ff")))
 
 swell_limits <- c(0, 16)
 period_limits <- c(0,18)
@@ -188,7 +189,7 @@ swell.list = lapply(sort(unique(clean_data$date)), function(i) {
   ggplot(data = clean_data[clean_data$date==i,], aes(y=y, x=x)) +
   geom_raster(aes(fill = height), interpolate = T) +
   facet_wrap(~as.factor(date)) +
-  scale_fill_gradientn(colours = swell_pal(10), limits = swell_limits) +
+  scale_fill_gradientn(colours = swell_pal(10), limits = swell_limits, ) +
   theme_classic() +
   theme(axis.line=element_blank(),axis.text.x=element_blank(),
           axis.text.y=element_blank(),axis.ticks=element_blank(),
@@ -269,7 +270,7 @@ period.list = lapply(sort(unique(Ta_data$date)), function(i) {
   theme_classic() +
   theme(axis.line=element_blank(),axis.text.x=element_blank(),
           axis.text.y=element_blank(),axis.ticks=element_blank(),
-          axis.title.x=element_blank(),legend.position="none",
+          axis.title.x=element_blank(),
           axis.title.y=element_blank(),
           panel.background=element_blank(),
         panel.border=element_blank(),
@@ -282,7 +283,9 @@ period.list = lapply(sort(unique(Ta_data$date)), function(i) {
   coord_sf(xlim = c(-121.4, -117.06), ylim = c(32.36, 34.75), expand = F)
 })
 
- 
+period.list[[1]] 
+
+legend.position="none",
 ```
 
 
