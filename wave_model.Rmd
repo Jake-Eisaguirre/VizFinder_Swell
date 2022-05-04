@@ -167,7 +167,7 @@ loc <- Ta_data %>%
 loc$period <- paste0(loc$period, " sec")
   
 
-rm(final_ras_ta, ta_loc, longitude, latitude) #,Ta_data)
+rm(final_ras_ta, ta_loc, longitude, latitude)
 gc()
 ```
 
@@ -177,7 +177,7 @@ gc()
 swell_pal <- colorRampPalette(c("lightskyblue2", "deepskyblue4", "seagreen3", "khaki2", "orangered","darkred"))
 
   
-period_pal <- colorRampPalette(rev(c("#1019a8","#1f2cff", "#2865ff", "#3bb6ff", "#49e6ff", "#4afd00", "#fdfc07", "#fbcc00", "#f76601", "#f728ff")))
+period_pal <- colorRampPalette(rev(c("#1019a8","#1f2cff", "#2865ff", "#3bb6ff", "#49e6ff", "#1de016", "#fdfc07", "#fbcc00", "#f76601", "#f728ff")))
 
 swell_limits <- c(0, 16)
 period_limits <- c(0,18)
@@ -283,7 +283,6 @@ period.list = lapply(sort(unique(Ta_data$date)), function(i) {
   coord_sf(xlim = c(-121.4, -117.06), ylim = c(32.36, 34.75), expand = F)
 })
 
-period.list[[1]] 
 
 
 #legend.position="none",
