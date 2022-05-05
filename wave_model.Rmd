@@ -270,7 +270,7 @@ period.list = lapply(sort(unique(Ta_data$date)), function(i) {
   theme_classic() +
   theme(axis.line=element_blank(),axis.text.x=element_blank(),
           axis.text.y=element_blank(),axis.ticks=element_blank(),
-          axis.title.x=element_blank(),
+          axis.title.x=element_blank(),legend.position="none",
           axis.title.y=element_blank(),
           panel.background=element_blank(),
         panel.border=element_blank(),
@@ -285,7 +285,7 @@ period.list = lapply(sort(unique(Ta_data$date)), function(i) {
 
 period.list[[1]]
 
-#legend.position="none",
+
 ```
 
 
