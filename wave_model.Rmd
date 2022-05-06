@@ -177,7 +177,7 @@ gc()
 swell_pal <- colorRampPalette(c("lightskyblue2", "deepskyblue4", "seagreen3", "khaki2", "orangered","darkred"))
 
   
-period_pal <- colorRampPalette(rev(c("#1019a8","#1f2cff", "#2865ff", "#3bb6ff", "#49e6ff", "#1de016", "#fdfc07", "#fbcc00", "#f76601", "#f728ff")))
+period_pal <- colorRampPalette(rev(c("#1c2394","#313ad4", "#2e5ed9", "#3ea2de", "#46c0d4", "#25cf1f", "#c9c916", "#deb814", "#de6a18", "#d229d9")))
 
 swell_limits <- c(0, 16)
 period_limits <- c(6,18)
