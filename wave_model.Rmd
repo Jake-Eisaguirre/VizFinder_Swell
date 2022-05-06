@@ -7,7 +7,6 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-
 library(raster)
 library(sf)
 library(here)
@@ -16,45 +15,27 @@ library(tidyverse)
 library(magick)
 library(colorRamps)
 library(fuzzyjoin)
-
-
 ```
 
 # Read in data
 ```{r}
 date <- as.Date(Sys.time(), tz = "PST8PDT")
   
-
 # date <- as.Date(date)  %>% 
 #    paste0("T00:00:00Z")
-
 fut_date <- as.Date(date) +5 
-
 fut_date <- as.Date(fut_date) %>% 
    paste0("T12:00:00Z") 
-
-
 #height
 url_Hs <- paste0("http://thredds.cdip.ucsd.edu/thredds/ncss/cdip/model/MOP_grids/CA_0.01_forecast.nc?var=waveHs&north=34.75&west=-121.4&east=-117.06&south=32.36&disableLLSubset=on&disableProjSubset=on&horizStride=1&time_start=", date, "&time_end=", fut_date, "&timeStride=1&addLatLon=true&accept=netcdf")
-
-
 download.file(url_Hs, here('data',"wave_data_Hs.nc"))
-
 Hs <- here('data',"wave_data_Hs.nc")
-
 wave_Hs <-brick(Hs)
-
-
 #period
 url_Ta <- paste0("http://thredds.cdip.ucsd.edu/thredds/ncss/cdip/model/MOP_grids/CA_0.01_forecast.nc?var=waveTa&north=34.75&west=-121.4&east=-117.06&south=32.36&disableLLSubset=on&disableProjSubset=on&horizStride=1&time_start=", date, "&time_end=", fut_date, "&timeStride=1&addLatLon=true&accept=netcdf")
-
-
 Ta <- download.file(url_Ta, here('data',"wave_data_Ta.nc"))
-
 Ta <- here('data',"wave_data_Ta.nc")
-
 wave_Ta <-brick(Ta)
-
 ```
 
 
@@ -62,32 +43,24 @@ wave_Ta <-brick(Ta)
 ```{r}
 islands <- read_sf(here('data', "shape",'island_shape', "channel_islands.shp")) %>% 
   mutate(geometry = st_transform(geometry, crs = 4326))
-
 ca <- read_sf(here('data', "shape","s_11au16", "s_11au16.shp")) %>% 
   mutate(geometry = st_transform(geometry, crs = 4326)) %>% 
   filter(NAME == "California") %>% 
   select(geometry)
-
 merged_shapes <- bind_rows(ca, islands)
 ```
 
 # crop and re-sample swell
 ```{r}
-
 hs_res <- c(0.005, 0.005) 
-
 new_ras_hs <- raster(xmn = -121.4,
                       xmx = -117.06,
                       ymn = 32.36,
                       ymx = 34.75,
                       res = hs_res)
-
 re_samp_hs <- resample(wave_Hs, new_ras_hs, method = "bilinear")
-
 cropped_hs <- mask(re_samp_hs, merged_shapes, inverse = T)
-
 final_ras_hs <- projectRaster(cropped_hs, crs = 4326)
-
 rm(new_ras_hs, wave_Hs, re_samp_hs, cropped_hs)
 gc()
 ```
@@ -95,10 +68,8 @@ gc()
 
 #clean swell data
 ```{r}
-
 Hs_data <- as.data.frame(rasterToPoints(final_ras_hs)) %>% 
   pivot_longer(!c(x,y), names_to = "date", values_to = "height")
-
 clean_data <- Hs_data %>% 
   mutate(date = gsub("X", "", date),
          date = as.numeric(date),
@@ -111,40 +82,30 @@ gc()
 # crop and re-sample period
 ```{r}
 ta_res <- c(0.005, 0.005)
-
 new_ras_ta <- raster(xmn = -121.4,
                       xmx = -117.06,
                       ymn = 32.36,
                       ymx = 34.75,
                       res = ta_res)
-
 re_samp_ta <- resample(wave_Ta, new_ras_ta, method = "bilinear")
-
 cropped_ta <- mask(re_samp_ta, merged_shapes, inverse = T)
-
 final_ras_ta <- projectRaster(cropped_ta, crs = 4326)
-
 rm(new_ras_ta, wave_Ta, re_samp_ta, cropped_ta, merged_shapes, islands, ca)
 gc()
 ```
 
 # period data
 ```{r}
-
 longitude <- as.vector(round(c(-121.110423, -120.562848, -120.057825,  -119.717691, 
                                -119.439510, -119.041160, -118.586216, -118.507400, 
                                -118.087338, -117.662998, -117.437052, -117.335509,
                                -118.160157,-119.059945, -119.943535, -120.515873, 
                                -119.070552, -118.295248, -119.471023, -120.584913), 6))
-
 latitude <-  as.vector(round(c(34.560459, 34.253113,34.348268, 34.147373, 34.256965, 
                                33.989257, 33.913609, 33.699766, 33.576926, 33.272809, 
                                32.922927, 32.535688, 32.606003, 32.500511, 32.644805, 
                                33.138259, 33.135506, 33.102819,33.696946, 33.703024), 6))
-
 ta_loc <- as.data.frame(cbind(longitude, latitude))
-
-
 Ta_data <- as.data.frame(rasterToPoints(final_ras_ta)) %>%
   pivot_longer(!c(x,y), names_to = "date", values_to = "period") %>%
   mutate(date = gsub("X", "", date),
@@ -152,9 +113,6 @@ Ta_data <- as.data.frame(rasterToPoints(final_ras_ta)) %>%
          date = as_datetime(date)) %>% 
   rename(latitude = y) %>% 
   rename(longitude = x)
-
-
-
 loc <- Ta_data %>% 
   group_by(date) %>% 
   geo_join(ta_loc, max_dist = 0.2, by = c("latitude", "longitude")) %>% 
@@ -166,7 +124,6 @@ loc <- Ta_data %>%
   
 loc$period <- paste0(loc$period, " sec")
   
-
 rm(final_ras_ta, ta_loc, longitude, latitude)
 gc()
 ```
@@ -175,10 +132,8 @@ gc()
 # pal
 ```{r}
 swell_pal <- colorRampPalette(c("lightskyblue2", "deepskyblue4", "seagreen3", "khaki2", "orangered","darkred"))
-
   
 period_pal <- colorRampPalette(rev(c("#1c2394","#313ad4", "#2e5ed9", "#3ea2de", "#46c0d4", "#25cf1f", "#c9c916", "#deb814", "#de6a18", "#d229d9")))
-
 swell_limits <- c(0, 16)
 period_limits <- c(6,18)
 ```
@@ -205,24 +160,17 @@ swell.list = lapply(sort(unique(clean_data$date)), function(i) {
         strip.text.x = element_blank()) +
   coord_sf(xlim = c(-121.4, -117.06), ylim = c(32.36, 34.75), expand = F)
 })
-
-
 ```
 
 # loop to create each plot for period 
 ```{r}
-
-
 new.swell.list <- list()
-
 for(i in seq_along(swell.list)){
   
   new.swell.list[[i]] <- swell.list[[i]] +
     geom_text(data = loc[loc$date==unique(loc$date)[i],], aes(x = longitude, y = latitude, label = period),
               check_overlap = T, size = 1.5) 
-
 }
-
 rm(swell.list, loc)
 gc()
 ```
@@ -232,32 +180,23 @@ gc()
 ```{r}
 #variable to adjust saved sst resolution
 hs_dpi <- c(215)
-
 unlink("pngs/swell/old/*")
-
 for(i in 1:length(new.swell.list)){
   
   ggsave(paste0(here('pngs', 'swell', 'old'), "/", clean_data$date[i], '.png'), dpi = hs_dpi, 
          bg = "transparent", plot = new.swell.list[[i]])
 }
-
-
 ```
 
 # Magick loop for swell
 ```{r}
-
 unlink("pngs/swell/site_ready/*")
-
 for(i in 1:length(new.swell.list)){
   hs <- image_read(paste0(here('pngs', 'swell', 'old'), "/", clean_data$date[i], '.png'))
   hs <- image_trim(hs)
   hs <- image_transparent(hs, "white")
   image_write(hs, paste0(here('pngs', 'swell', 'site_ready'), "/", clean_data$date[i], '.png'))
 }
-
-
-
 ```
 
 
@@ -282,10 +221,6 @@ period.list = lapply(sort(unique(Ta_data$date)), function(i) {
         strip.text.x = element_blank()) +
   coord_sf(xlim = c(-121.4, -117.06), ylim = c(32.36, 34.75), expand = F)
 })
-
-period.list[[1]]
-
-
 ```
 
 
@@ -293,28 +228,20 @@ period.list[[1]]
 ```{r}
 #variable to adjust saved sst resolution
 ta_dpi <- c(215)
-
 unlink("pngs/period/old/*")
-
 for(i in 1:length(period.list)){
-
   ggsave(paste0(here('pngs', 'period', 'old'), "/", Ta_data$date[i], '.png'), dpi = ta_dpi,
          bg = "transparent", plot = period.list[[i]])
 }
-
-
 ```
 
 # Magick loop for period
 ```{r}
-
 unlink("pngs/period/site_ready/*")
-
 for(i in 1:length(period.list)){
   ta <- image_read(paste0(here('pngs', 'period', 'old'), "/", Ta_data$date[i], '.png'))
   ta <- image_trim(ta)
   ta <- image_transparent(ta, "white")
   image_write(ta, paste0(here('pngs', 'period', 'site_ready'), "/", Ta_data$date[i], '.png'))
 }
-
 ```
