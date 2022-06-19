@@ -15,9 +15,12 @@ library(tidyverse)
 library(magick)
 library(colorRamps)
 library(fuzzyjoin)
+library(pracma)
 ```
 
 # Read in data
+
+# run time: 00:30PST, 06:30PST, 12:30PST, 18:30PST
 ```{r}
 date <- as.Date(Sys.time(), tz = "PST8PDT")
   
@@ -36,6 +39,12 @@ url_Ta <- paste0("http://thredds.cdip.ucsd.edu/thredds/ncss/cdip/model/MOP_grids
 Ta <- download.file(url_Ta, here('data',"wave_data_Ta.nc"))
 Ta <- here('data',"wave_data_Ta.nc")
 wave_Ta <-brick(Ta)
+
+#angle
+url_Dp <- paste0("http://thredds.cdip.ucsd.edu/thredds/ncss/cdip/model/MOP_grids/CA_0.01_forecast.nc?var=waveDp&north=34.75&west=-121.4&east=-117.06&south=32.36&disableLLSubset=on&disableProjSubset=on&horizStride=1&time_start=", date, "&time_end=", fut_date, "&timeStride=1&addLatLon=true&accept=netcdf")
+Dp <- download.file(url_Dp, here('data',"wave_data_Dp.nc"))
+Dp <- here('data',"wave_data_Dp.nc")
+wave_Dp <-brick(Dp)
 ```
 
 
@@ -50,6 +59,10 @@ ca <- read_sf(here('data', "shape","s_11au16", "s_11au16.shp")) %>%
 merged_shapes <- bind_rows(ca, islands)
 ```
 
+
+
+
+
 # crop and re-sample swell
 ```{r}
 hs_res <- c(0.005, 0.005) 
@@ -61,6 +74,7 @@ new_ras_hs <- raster(xmn = -121.4,
 re_samp_hs <- resample(wave_Hs, new_ras_hs, method = "bilinear")
 cropped_hs <- mask(re_samp_hs, merged_shapes, inverse = T)
 final_ras_hs <- projectRaster(cropped_hs, crs = 4326)
+
 rm(new_ras_hs, wave_Hs, re_samp_hs, cropped_hs)
 gc()
 ```
@@ -75,6 +89,14 @@ clean_data <- Hs_data %>%
          date = as.numeric(date),
          date = as_datetime(date),
          height = 3.28 * height)
+
+ras_date <- clean_data$date
+
+date <- as.character((.POSIXct(ras_date, "UTC") - (1 *60*60)))
+
+clean_data$date <- date
+
+
 rm(Hs_data, final_ras_hs)
 gc()
 ```
@@ -90,7 +112,8 @@ new_ras_ta <- raster(xmn = -121.4,
 re_samp_ta <- resample(wave_Ta, new_ras_ta, method = "bilinear")
 cropped_ta <- mask(re_samp_ta, merged_shapes, inverse = T)
 final_ras_ta <- projectRaster(cropped_ta, crs = 4326)
-rm(new_ras_ta, wave_Ta, re_samp_ta, cropped_ta, merged_shapes, islands, ca)
+
+rm(new_ras_ta, wave_Ta, re_samp_ta, cropped_ta, islands, ca)
 gc()
 ```
 
@@ -106,6 +129,7 @@ latitude <-  as.vector(round(c(34.560459, 34.253113,34.348268, 34.147373, 34.256
                                32.922927, 32.535688, 32.606003, 32.500511, 32.644805, 
                                33.138259, 33.135506, 33.102819,33.696946, 33.703024), 6))
 ta_loc <- as.data.frame(cbind(longitude, latitude))
+
 Ta_data <- as.data.frame(rasterToPoints(final_ras_ta)) %>%
   pivot_longer(!c(x,y), names_to = "date", values_to = "period") %>%
   mutate(date = gsub("X", "", date),
@@ -113,6 +137,7 @@ Ta_data <- as.data.frame(rasterToPoints(final_ras_ta)) %>%
          date = as_datetime(date)) %>% 
   rename(latitude = y) %>% 
   rename(longitude = x)
+
 loc <- Ta_data %>% 
   group_by(date) %>% 
   geo_join(ta_loc, max_dist = 0.2, by = c("latitude", "longitude")) %>% 
@@ -123,9 +148,34 @@ loc <- Ta_data %>%
   as.data.frame()
   
 loc$period <- paste0(loc$period, " sec")
+
+ras_date <- loc$date
+
+date <- as.character((.POSIXct(ras_date, "UTC") - (1 *60*60)))
+
+loc$date <- date
   
 rm(final_ras_ta, ta_loc, longitude, latitude)
 gc()
+```
+```{r}
+agg_dp <- raster::aggregate(wave_Dp, 12, fun = mean) %>% 
+  mask(merged_shapes, inverse = T) %>% 
+  rasterToPoints() %>% 
+  as.data.frame() %>% 
+  pivot_longer(!c(x,y), names_to = "date", values_to = "angle") %>% 
+  mutate(date = gsub("X", "", date),
+         date = as.numeric(date),
+         date = as_datetime(date),
+         angle = deg2rad(angle),
+         angle = (270 - (angle * (180/pi))%%360))
+
+ras_date <- agg_dp$date
+
+date <- as.character((.POSIXct(ras_date, "UTC") - (1 *60*60)))
+
+agg_dp$date <- date
+
 ```
 
 
@@ -175,16 +225,28 @@ rm(swell.list, loc)
 gc()
 ```
 
+```{r}
+dp.list <- list()
+
+for(i in seq_along(new.swell.list)){
+  
+  dp.list[[i]] <- new.swell.list[[i]] +
+    geom_text(data = agg_dp[agg_dp$date==unique(agg_dp$date)[i],], aes(angle=angle), label="→", check_overlap = T, size = 2)
+  
+}
+
+```
+
 
 # ggsave loop for swell  
 ```{r}
 #variable to adjust saved sst resolution
 hs_dpi <- c(215)
 unlink("pngs/swell/old/*")
-for(i in 1:length(new.swell.list)){
+for(i in 1:length(dp.list)){
   
   ggsave(paste0(here('pngs', 'swell', 'old'), "/", clean_data$date[i], '.png'), dpi = hs_dpi, 
-         bg = "transparent", plot = new.swell.list[[i]])
+         bg = "transparent", plot = dp.list[[i]])
 }
 ```
 
@@ -204,7 +266,7 @@ for(i in 1:length(new.swell.list)){
 period.list = lapply(sort(unique(Ta_data$date)), function(i) {
   ggplot(data = Ta_data[Ta_data$date==i,], aes(y=latitude, x=longitude)) +
   geom_raster(aes(fill = period), interpolate = T) +
-  facet_wrap(~as.factor(date)) +
+  facet_wrap(levels(~date)) +
   scale_fill_gradientn(colours = period_pal(10), limits = period_limits) +
   theme_classic() +
   theme(axis.line=element_blank(),axis.text.x=element_blank(),
@@ -223,6 +285,22 @@ period.list = lapply(sort(unique(Ta_data$date)), function(i) {
 })
 ```
 
+```{r}
+agg_d <- agg_dp %>% 
+  rename(latitude = y) %>% 
+  rename(longitude = x)
+
+dp.list <- list()
+
+for(i in seq_along(period.list)){
+  
+  dp.list[[i]] <- period.list[[i]] +
+    geom_text(data = agg_d[agg_d$date==unique(agg_d$date)[i],], aes(angle=angle), label="→", check_overlap = T, size = 2)
+  
+}
+
+```
+
 
 # ggsave loop for period 
 ```{r}
@@ -231,7 +309,7 @@ ta_dpi <- c(215)
 unlink("pngs/period/old/*")
 for(i in 1:length(period.list)){
   ggsave(paste0(here('pngs', 'period', 'old'), "/", Ta_data$date[i], '.png'), dpi = ta_dpi,
-         bg = "transparent", plot = period.list[[i]])
+         bg = "transparent", plot = dp.list[[i]])
 }
 ```
 
